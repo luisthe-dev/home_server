@@ -1,0 +1,123 @@
+services:
+
+    mysql:
+      image: mysql:latest
+      restart: unless-stopped
+      environment:
+        - MYSQL_ROOT_PASSWORD=casper213
+      volumes:
+        - mysql_data:/var/lib/mysql
+      ports:
+        - "3306:3306"
+      networks:
+        - servers
+      deploy:
+        resources:
+          limits:
+            memory: 1G
+            cpus: '1'
+
+    postgres:
+      image: postgres:latest
+      restart: unless-stopped
+      environment:
+        POSTGRES_PASSWORD: casper213
+        POSTGRES_USER: luis
+        POSTGRES_DB: luis_dev
+      volumes:
+        - postgres_data:/var/lib/postgresql
+      ports:
+        - "5432:5432"
+      networks:
+        - servers
+      deploy:
+        resources:
+          limits:
+            memory: 1G
+            cpus: '1'
+
+    redis:
+      image: redis:latest
+      restart: unless-stopped
+      volumes:
+        - redis_data:/data
+      ports:
+        - "6379:6379"
+      networks:
+        - servers
+      deploy:
+        resources:
+          limits:
+            memory: 4G
+            cpus: '1'
+
+    redis-insight:
+      image: redis/redisinsight:latest
+      restart: unless-stopped
+      ports:
+        - "5540:5540"
+      volumes:
+        - redis_insight_data:/data
+      networks:
+        - servers
+      depends_on:
+        - redis
+      environment:
+        RI_ACCEPT_EULA: "true" 
+      deploy:
+        resources:
+          limits:
+            memory: 1G
+            cpus: '1'
+
+    raphael:
+      image: ollama/ollama:latest
+      restart: unless-stopped
+      build: raphael
+      ports:
+        - "11434:11434"
+      volumes:
+      - ollama_data:/root/.ollama
+      - ./raphael/entry.sh:/app/entry.sh
+      networks:
+        - servers
+      depends_on:
+        - mysql
+        - redis
+      deploy:
+        resources:
+          limits:
+            memory: 4G
+            cpus: '2'
+
+    meillesearch:
+      image: getmeili/meilisearch:latest
+      restart: unless-stopped
+      ports:
+        - "7700:7700"
+      volumes:
+        - meilisearch_data:/data
+      networks:
+        - servers
+      environment:
+        - MEILI_MASTER_KEY=gTin-5oIEZCPoepSN5bLoyx9w4WZi02qxtzi2WPD0J8
+        - MEILI_ENV=production
+      depends_on:
+        - raphael
+      deploy:
+        resources:
+          limits:
+            memory: 3G
+            cpus: '2'
+
+volumes:
+  mysql_data:
+  postgres_data:
+  redis_data:
+  redis_insight_data:
+  ollama_data:
+  meilisearch_data:
+
+networks:
+  servers:
+    external: true
