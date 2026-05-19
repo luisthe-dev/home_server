@@ -2,7 +2,7 @@ FROM ollama/ollama:latest
 
 
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y python3 curl ffmpeg zstd
+RUN apt-get install -y python3 curl ffmpeg zstd jq
 
 COPY . /app
 WORKDIR /app

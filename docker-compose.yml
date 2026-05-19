@@ -78,7 +78,7 @@ services:
         - "11434:11434"
       volumes:
       - ollama_data:/root/.ollama
-      - ./raphael/entry.sh:/app/entry.sh
+      - ./raphael/:/app/:Z
       networks:
         - servers
       depends_on:
@@ -87,8 +87,18 @@ services:
       deploy:
         resources:
           limits:
-            memory: 4G
-            cpus: '2'
+            memory: 10G
+            cpus: '3'
+
+    search:
+      image: searxng/searxng:latest
+      restart: unless-stopped
+      ports:
+        - "1234:8080"
+      volumes:
+        - ./search:/etc/searxng:Z
+      environment:
+        - SEARXNG_BASE_URL=http://127.0.0.1:1234/
 
     meillesearch:
       image: getmeili/meilisearch:latest

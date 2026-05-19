@@ -1,0 +1,22 @@
+use_default_settings: true
+
+server:
+  # Paste your generated hex string here
+  secret_key: "28dec69881138c2947fc107a83cbb3472f921547d54f3f503d5d9421a7a36b90"
+  # Allows other containers to talk to it
+  bind_address: "0.0.0.0"
+
+search:
+  # The 'json' format is required for your Laravel RAG pipeline to read results
+  formats:
+    - html
+    - json
+
+# Optional: Disable engines that are often slow or block local IPs
+engines:
+  - name: google
+    engine: google
+    disabled: false
+  - name: bing
+    engine: bing
+    disabled: true
