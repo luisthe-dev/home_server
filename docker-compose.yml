@@ -1,124 +1,131 @@
 services:
 
-    mysql:
-      image: mysql:latest
-      restart: unless-stopped
-      environment:
-        - MYSQL_ROOT_PASSWORD=casper213
-      volumes:
-        - mysql_data:/var/lib/mysql
-      ports:
-        - "3306:3306"
-      networks:
-        - servers
-      deploy:
-        resources:
-          limits:
-            memory: 1G
-            cpus: '1'
+  mysql:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-casper213}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
+    networks:
+      - servers
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
 
-    postgres:
-      image: postgres:latest
-      restart: unless-stopped
-      environment:
-        POSTGRES_PASSWORD: casper213
-        POSTGRES_USER: luis
-        POSTGRES_DB: luis_dev
-      volumes:
-        - postgres_data:/var/lib/postgresql
-      ports:
-        - "5432:5432"
-      networks:
-        - servers
-      deploy:
-        resources:
-          limits:
-            memory: 1G
-            cpus: '1'
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-casper213}
+      POSTGRES_USER: ${POSTGRES_USER:-luis}
+      POSTGRES_DB: ${POSTGRES_DB:-luis_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - servers
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
 
-    redis:
-      image: redis:latest
-      restart: unless-stopped
-      volumes:
-        - redis_data:/data
-      ports:
-        - "6379:6379"
-      networks:
-        - servers
-      deploy:
-        resources:
-          limits:
-            memory: 4G
-            cpus: '1'
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
+    networks:
+      - servers
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '1'
 
-    redis-insight:
-      image: redis/redisinsight:latest
-      restart: unless-stopped
-      ports:
-        - "5540:5540"
-      volumes:
-        - redis_insight_data:/data
-      networks:
-        - servers
-      depends_on:
-        - redis
-      environment:
-        RI_ACCEPT_EULA: "true" 
-      deploy:
-        resources:
-          limits:
-            memory: 1G
-            cpus: '1'
+  redis-insight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${REDIS_INSIGHT_PORT:-5540}:5540"
+    volumes:
+      - redis_insight_data:/data
+    networks:
+      - servers
+    depends_on:
+      - redis
+    environment:
+      RI_ACCEPT_EULA: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
 
-    raphael:
-      image: ollama/ollama:latest
-      restart: unless-stopped
-      build: raphael
-      ports:
-        - "11434:11434"
-      volumes:
+  raphael:
+    build:
+      context: ./raphael
+      dockerfile: Dockerfile
+    image: servers-raphael:latest
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${OLLAMA_PORT:-11434}:11434"
+    volumes:
       - ollama_data:/root/.ollama
       - ./raphael/:/app/:Z
-      networks:
-        - servers
-      depends_on:
-        - mysql
-        - redis
-      deploy:
-        resources:
-          limits:
-            memory: 10G
-            cpus: '3'
+    environment:
+      - OLLAMA_MODELS=${OLLAMA_MODELS:-}
+    networks:
+      - servers
+    depends_on:
+      - mysql
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 10G
+          cpus: '3'
 
-    search:
-      image: searxng/searxng:latest
-      restart: unless-stopped
-      ports:
-        - "1234:8080"
-      volumes:
-        - ./search:/etc/searxng:Z
-      environment:
-        - SEARXNG_BASE_URL=http://127.0.0.1:1234/
+  search:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${SEARXNG_PORT:-1234}:8080"
+    volumes:
+      - ./search:/etc/searxng:Z
+    environment:
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://127.0.0.1:1234/}
+      - SEARXNG_SECRET=${SEARXNG_SECRET_KEY:-}
+    networks:
+      - servers
 
-    meillesearch:
-      image: getmeili/meilisearch:latest
-      restart: unless-stopped
-      ports:
-        - "7700:7700"
-      volumes:
-        - meilisearch_data:/data
-      networks:
-        - servers
-      environment:
-        - MEILI_MASTER_KEY=gTin-5oIEZCPoepSN5bLoyx9w4WZi02qxtzi2WPD0J8
-        - MEILI_ENV=production
-      depends_on:
-        - raphael
-      deploy:
-        resources:
-          limits:
-            memory: 3G
-            cpus: '2'
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${MEILI_PORT:-7700}:7700"
+    volumes:
+      - meilisearch_data:/data
+    networks:
+      - servers
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-gTin-5oIEZCPoepSN5bLoyx9w4WZi02qxtzi2WPD0J8}
+      - MEILI_ENV=${MEILI_ENV:-production}
+    depends_on:
+      - raphael
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '2'
 
 volumes:
   mysql_data:
@@ -130,4 +137,5 @@ volumes:
 
 networks:
   servers:
-    external: true
+    name: servers
+    driver: bridge

@@ -1,2 +1,4 @@
-/raphael/my_models
+.env
 /raphael/hash_cache.json
+*.tmp
+*.log

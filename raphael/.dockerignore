@@ -1,0 +1,5 @@
+.git
+.gitignore
+hash_cache.json
+*.tmp
+*.log
